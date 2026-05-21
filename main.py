@@ -1,5 +1,72 @@
 import time 
 
+# Modifier keys
+MODIFIERS = {
+    'CTRL':  0x01,
+    'SHIFT': 0x02,
+    'ALT':   0x04,
+    'GUI':   0x08,   # Windows key
+    'WIN':   0x08,
+}
+
+# HID keycodes
+KEYS = {
+    # Letters
+    'a': 0x04, 'b': 0x05, 'c': 0x06, 'd': 0x07,
+    'e': 0x08, 'f': 0x09, 'g': 0x0a, 'h': 0x0b,
+    'i': 0x0c, 'j': 0x0d, 'k': 0x0e, 'l': 0x0f,
+    'm': 0x10, 'n': 0x11, 'o': 0x12, 'p': 0x13,
+    'q': 0x14, 'r': 0x15, 's': 0x16, 't': 0x17,
+    'u': 0x18, 'v': 0x19, 'w': 0x1a, 'x': 0x1b,
+    'y': 0x1c, 'z': 0x1d,
+
+    # Numbers
+    '1': 0x1e, '2': 0x1f, '3': 0x20, '4': 0x21,
+    '5': 0x22, '6': 0x23, '7': 0x24, '8': 0x25,
+    '9': 0x26, '0': 0x27,
+
+    # Controls
+    'ENTER': 0x28,
+    'ESC': 0x29,
+    'BACKSPACE': 0x2a,
+    'TAB': 0x2b,
+    'SPACE': 0x2c,
+
+    # Symbols
+    '-': 0x2d,
+    '=': 0x2e,
+    '[': 0x2f,
+    ']': 0x30,
+    '\\': 0x31,
+    ';': 0x33,
+    "'": 0x34,
+    '`': 0x35,
+    ',': 0x36,
+    '.': 0x37,
+    '/': 0x38,
+
+    # Arrow keys
+    'RIGHT': 0x4f,
+    'LEFT': 0x50,
+    'DOWN': 0x51,
+    'UP': 0x52,
+
+    # Function keys
+    'F1': 0x3a,
+    'F2': 0x3b,
+    'F3': 0x3c,
+    'F4': 0x3d,
+    'F5': 0x3e,
+    'F6': 0x3f,
+    'F7': 0x40,
+    'F8': 0x41,
+    'F9': 0x42,
+    'F10': 0x43,
+    'F11': 0x44,
+    'F12': 0x45,
+}
+
+
 keys = {
     # Lowercase a-z
     'a': b'\x00\x00\x04\x00\x00\x00\x00\x00',
@@ -129,5 +196,41 @@ def write_key(str):
                 fd.write(release)
                 time.sleep(0.1)
 
+def send_combo(*keys):
+    modifier = 0
+    keycodes = []
+
+    for key in keys:
+        key = key.upper()
+
+        # Modifier
+        if key in MODIFIERS:
+            modifier |= MODIFIERS[key]
+
+        # Normal key
+        else:
+            actual = key.lower() if len(key) == 1 else key
+
+            if actual not in KEYS:
+                raise ValueError(f"Unknown key: {key}")
+
+            keycodes.append(KEYS[actual])
+
+    # Max 6 simultaneous keys
+    while len(keycodes) < 6:
+        keycodes.append(0x00)
+
+    report = bytes([
+        modifier,
+        0x00,
+        *keycodes[:6]
+    ])
+
+    with open('/dev/hidg0', 'wb') as fd:
+        fd.write(report)
+        time.sleep(0.05)
+        fd.write(release)
+
 if __name__ == "__main__":
-    write_key("Hello, World!\n")
+    send_combo('CTRL', 'c')
+    write_key('Hello, World!\n')
