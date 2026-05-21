@@ -192,9 +192,8 @@ def write_key(str):
         if i in keys:
             with open('/dev/hidg0', 'rb+') as fd:
                 fd.write(keys[i])
-                time.sleep(0.1)
+                time.sleep(0.005)
                 fd.write(release)
-                time.sleep(0.1)
 
 def send_combo(*keys):
     modifier = 0
